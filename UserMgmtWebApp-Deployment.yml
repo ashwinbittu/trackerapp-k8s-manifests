@@ -36,6 +36,6 @@ spec:
             - name: DB_PASSWORD
               value: "dbpassword11"            
 # To schedule pods on based on NodeSelectors
-      nodeSelector:
-        app: java-apps
+      #nodeSelector:
+      #  app: java-apps
 
