@@ -1,0 +1,36 @@
+trigger:
+- main
+
+pool:
+  name: Default
+  demands:
+   - agent.name -equals ado-agent1-vm 
+
+variables:
+
+- group: all_variables
+
+stages:
+- stage: Delete
+  displayName: Delete K8s stage
+  jobs:  
+  - job: Delete
+    displayName: Delete
+    steps:
+          - task: KubernetesManifest@0
+            inputs:
+              action: 'delete'
+              kubernetesServiceConnection: 'terraform-azure-aks-tracker_app_aks_cluster_endpoint'
+              namespace: 'default'
+              arguments: '-f manifest/.'             
+          - task: KubernetesManifest@0
+            inputs:
+              action: 'createSecret'
+              kubernetesServiceConnection: 'terraform-azure-aks-tracker_app_aks_cluster_endpoint'
+              namespace: 'default'
+              secretType: 'dockerRegistry'
+              secretName: '$(imagePullSecret)'
+              dockerRegistryEndpoint: 'terraform-azure-aks-trackerappacrreg-endpoint'   
+          
+    
+

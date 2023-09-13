@@ -1,0 +1,10 @@
+dnamespace: default
+replicas:
+- name: usermgmt-webapp
+  count: 4
+images:
+- name: trackerappacrreg.azurecr.io/trackerapp/trackerapprepo
+  newName: trackeracrregcentindprod.azurecr.io/tracker/trackerrepo
+  newTag: "1448"
+resources:
+- ../../base-manifests

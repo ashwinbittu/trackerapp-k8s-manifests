@@ -1,0 +1,12 @@
+namespace: default
+replicas:
+- name: usermgmt-webapp
+  count: 2
+images:
+- name: trackerappacrreg.azurecr.io/trackerapp/trackerapprepo
+  newName: trackeracrregauseastdev.azurecr.io/tracker/trackerrepo
+  newTag: "1448"
+- name: trackeracrregauseastdev.azurecr.io/tracker/trackerrepo
+  newTag: "1793"
+resources:
+- ../../base-manifests

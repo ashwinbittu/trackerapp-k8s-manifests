@@ -1,0 +1,74 @@
+trigger:
+- main
+
+# resources:
+#   pipelines:
+#   - pipeline: Build_Test_Push_Pipeline_Trigger
+#     source: Build_Test_Push_Pipeline
+#     project: trackeraks
+#     trigger: true
+
+pool:
+  name: Default
+  demands:
+   - agent.name -equals ado-agent1-vm 
+
+variables:
+- group: dev_variables
+
+stages:
+- stage: DeployAppStage
+  displayName: Deploy Application
+  jobs:  
+  - deployment: DeployAppStage
+    displayName: Deploy Application
+    environment: $(current_env)      
+    strategy:
+      runOnce:
+        deploy:
+          steps:
+            - checkout: self       
+            - task: KubernetesManifest@0
+              displayName: Create Argo CD Image Updater Secret For Pulling Images in default NS
+              inputs:
+                action: 'createSecret'
+                kubernetesServiceConnection: '$(aksServiceConnection)'
+                namespace: 'default'
+                secretType: 'dockerRegistry'
+                secretName: '$(imagePullSecret)'
+                dockerRegistryEndpoint: '$(dockerRegistryServiceConnection)'
+            - task: KubernetesManifest@0
+              displayName: Create Argo CD Image Updater Secret For Pushing GIT tags
+              inputs:
+                action: 'createSecret'
+                kubernetesServiceConnection: '$(aksServiceConnection)'
+                namespace: 'argocd'
+                secretType: 'dockerRegistry'
+                secretName: 'azuredeveops-acr-secret-pipeline'
+                dockerRegistryEndpoint: '$(dockerRegistryServiceConnection)'
+
+            - task: KubernetesManifest@0
+              displayName: Create Argo CD Image Updater Secret For Pulling Images in argocd ns
+              inputs:
+                action: 'createSecret'
+                kubernetesServiceConnection: '$(aksServiceConnection)'
+                namespace: 'argocd'
+                secretType: 'generic'
+                secretName: 'azuredeveops-repo-pipeline'
+                secretArguments: '--from-literal=username=argocd --from-literal=password=$(personal_access_token)'
+            - task: KubernetesManifest@0
+              displayName: Deploy to Kubernetes cluster
+              inputs:
+                action: 'deploy'
+                kubernetesServiceConnection: '$(aksServiceConnection)'
+                namespace: 'argocd'
+                manifests: |
+                  $(Build.Repository.LocalPath)/argocd-files/argocd-project.yaml
+                  $(Build.Repository.LocalPath)/argocd-files/argocd-application-$(current_env).yaml
+                imagePullSecrets: '$(imagePullSecret)'
+            - task: CmdLine@2
+              displayName: Integration Tests for Application
+              inputs:
+                script: |
+                  echo 'Starting Integration Tests for App'          
+                  #sh integration-test-PROD.sh 
